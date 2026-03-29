@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redstone — Quote Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #C0392B;
+    --red-dim: rgba(192,57,43,0.12);
+    --red-border: rgba(192,57,43,0.3);
+    --bg: #0e0e0e;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0ede8;
+    --text-dim: rgba(240,237,232,0.45);
+    --text-mid: rgba(240,237,232,0.7);
+    --mono: 'DM Mono', monospace;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  html { background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; }
+
+  body { max-width: 680px; margin: 0 auto; padding: 3rem 1.5rem 8rem; }
+
+  header { margin-bottom: 3.5rem; }
+
+  .wordmark { display: flex; align-items: center; gap: 10px; margin-bottom: 2.5rem; }
+
+  .triangle {
+    width: 0; height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 13px solid var(--red);
+  }
+
+  .wordmark-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 6vw, 3rem);
+    font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  h1 em { font-style: italic; color: var(--text-dim); }
+
+  .subtitle {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .divider {
+    border: none;
+    border-top: 0.5px solid var(--border);
+    margin: 2rem 0;
+  }
+
+  .section { margin-bottom: 2rem; }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 300;
+    padding: 7px 16px;
+    border: 0.5px solid var(--border2);
+    background: transparent;
+    color: var(--text-mid);
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+    border-radius: 2px;
+  }
+
+  .chip:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+
+  .chip.active {
+    background: var(--red-dim);
+    border-color: var(--red-border);
+    color: var(--text);
+  }
+
+  .slider-group { display: flex; flex-direction: column; gap: 14px; }
+
+  .slider-row { display: flex; align-items: center; gap: 14px; }
+
+  .slider-name {
+    font-size: 12px;
+    color: var(--text-mid);
+    min-width: 130px;
+    letter-spacing: 0.04em;
+  }
+
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 1px;
+    background: var(--border2);
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--red);
+    cursor: pointer;
+  }
+
+  .slider-val {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 38px;
+    text-align: right;
+  }
+
+  .toggles { display: flex; flex-direction: column; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 0;
+    border-bottom: 0.5px solid var(--border);
+    cursor: pointer;
+    gap: 16px;
+  }
+
+  .toggle-row:first-child { border-top: 0.5px solid var(--border); }
+
+  .toggle-info { flex: 1; }
+
+  .toggle-name { font-size: 13px; color: var(--text-mid); letter-spacing: 0.03em; }
+
+  .toggle-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.03em; }
+
+  .toggle-amount { font-size: 12px; color: var(--text-dim); min-width: 48px; text-align: right; }
+
+  .switch {
+    width: 34px;
+    height: 18px;
+    border-radius: 9px;
+    background: var(--border2);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+
+  .switch.on { background: var(--red); }
+
+  .switch::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    top: 3px;
+    left: 3px;
+    transition: left 0.15s;
+  }
+
+  .switch.on::after { left: 19px; }
+
+  .summary {
+    margin-top: 2.5rem;
+    border: 0.5px solid var(--border2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .summary-header {
+    padding: 1.25rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .summary-header-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .summary-date { font-size: 11px; color: var(--text-dim); }
+
+  .summary-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .metric {
+    padding: 1rem 1.5rem;
+    border-right: 0.5px solid var(--border);
+  }
+
+  .metric:last-child { border-right: none; }
+
+  .metric-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 6px; }
+
+  .metric-val { font-size: 20px; font-weight: 400; color: var(--text); font-family: var(--serif); }
+
+  .line-items { padding: 1rem 1.5rem; background: var(--surface2); }
+
+  .line { display: flex; justify-content: space-between; padding: 6px 0; }
+
+  .line-label { font-size: 12px; color: var(--text-dim); }
+
+  .line-val { font-size: 12px; color: var(--text-mid); font-weight: 400; }
+
+  .line-val.zero { color: var(--text-dim); opacity: 0.4; }
+
+  .total-block {
+    padding: 1.25rem 1.5rem;
+    background: var(--surface);
+    border-top: 0.5px solid var(--border2);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .total-label-group { display: flex; flex-direction: column; gap: 4px; }
+
+  .total-main-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .deposit-note { font-size: 11px; color: var(--red); opacity: 0.8; }
+
+  .total-val {
+    font-family: var(--serif);
+    font-size: 2.8rem;
+    font-weight: 300;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .rate-note {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin-top: 1.5rem;
+    text-transform: uppercase;
+  }
+
+  .float-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(14,14,14,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 0.5px solid var(--border2);
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 100;
+  }
+
+  .float-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .float-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .float-deposit {
+    font-size: 11px;
+    color: var(--red);
+    opacity: 0.85;
+  }
+
+  .float-total {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 300;
+    color: var(--text);
+    line-height: 1;
+    transition: all 0.2s ease;
+  }
+
+  .float-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .float-hours {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 480px) {
+    .summary-metrics { grid-template-columns: 1fr 1fr; }
+    .metric:nth-child(2) { border-right: none; }
+    .metric:nth-child(3) { border-top: 0.5px solid var(--border); grid-column: 1 / -1; }
+    .slider-name { min-width: 100px; font-size: 11px; }
+    .float-total { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">
+    <div class="triangle"></div>
+    <span class="wordmark-text">Redstone Laboratories</span>
+  </div>
+  <h1>Quote <em>Calculator</em></h1>
+  <div class="subtitle" style="margin-top: 0.75rem;">Commercial video production</div>
+</header>
+
+<div class="section">
+  <div class="section-label">Starting point</div>
+  <div class="chips">
+    <button class="chip active" onclick="setChip(this,'base','base')">Based on demo</button>
+    <button class="chip" onclick="setChip(this,'base','new')">New concept</button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Length</div>
+  <div class="chips">
+    <button class="chip active" onclick="setChip(this,'length','30')">30 sec</button>
+    <button class="chip" onclick="setChip(this,'length','60')">60 sec</button>
+    <button class="chip" onclick="setChip(this,'length','90')">90 sec</button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Revision rounds included</div>
+  <div class="chips">
+    <button class="chip" onclick="setChip(this,'revisions','1')">1 round</button>
+    <button class="chip active" onclick="setChip(this,'revisions','2')">2 rounds</button>
+    <button class="chip" onclick="setChip(this,'revisions','3')">3 rounds</button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Turnaround</div>
+  <div class="chips">
+    <button class="chip" onclick="setChip(this,'rush','rush')">Rush — under 1 week</button>
+    <button class="chip active" onclick="setChip(this,'rush','standard')">Standard — 2 to 4 weeks</button>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="section">
+  <div class="section-label">Add-ons</div>
+  <div class="toggles">
+    <div class="toggle-row" onclick="toggleItem('vo')">
+      <div class="toggle-info">
+        <div class="toggle-name">Voiceover</div>
+        <div class="toggle-sub">ElevenLabs generation + direction</div>
+      </div>
+      <span class="toggle-amount">+$150</span>
+      <button class="switch" id="sw-vo"></button>
+    </div>
+    <div class="toggle-row" onclick="toggleItem('music')">
+      <div class="toggle-info">
+        <div class="toggle-name">Music licensing</div>
+        <div class="toggle-sub">Stock track, cleared for commercial use</div>
+      </div>
+      <span class="toggle-amount">+$200</span>
+      <button class="switch" id="sw-music"></button>
+    </div>
+    <div class="toggle-row" onclick="toggleItem('export')">
+      <div class="toggle-info">
+        <div class="toggle-name">Multiple export formats</div>
+        <div class="toggle-sub">Web, 4K, screen-optimized variants</div>
+      </div>
+      <span class="toggle-amount">+$100</span>
+      <button class="switch" id="sw-export"></button>
+    </div>
+    <div class="toggle-row" onclick="toggleItem('rights')">
+      <div class="toggle-info">
+        <div class="toggle-name">Client retains raw assets</div>
+        <div class="toggle-sub">All source files delivered</div>
+      </div>
+      <span class="toggle-amount">+$300</span>
+      <button class="switch" id="sw-rights"></button>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="section">
+  <div class="section-label">Estimated generation costs</div>
+  <div class="slider-group">
+    <div class="slider-row">
+      <span class="slider-name">FAL.AI / Kling</span>
+      <input type="range" min="20" max="200" step="5" value="60" id="fal-slider" oninput="document.getElementById('fal-val').textContent='$'+this.value; calc()">
+      <span class="slider-val" id="fal-val">$60</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-name">ElevenLabs</span>
+      <input type="range" min="0" max="50" step="5" value="10" id="el-slider" oninput="document.getElementById('el-val').textContent='$'+this.value; calc()">
+      <span class="slider-val" id="el-val">$10</span>
+    </div>
+  </div>
+</div>
+
+<div class="summary">
+  <div class="summary-header">
+    <span class="summary-header-label">Quote summary</span>
+    <span class="summary-date" id="today-date"></span>
+  </div>
+
+  <div class="summary-metrics">
+    <div class="metric">
+      <div class="metric-label">Est. hours</div>
+      <div class="metric-val" id="s-hours">—</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Your rate</div>
+      <div class="metric-val">$135/hr</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Hard costs</div>
+      <div class="metric-val" id="s-hard">—</div>
+    </div>
+  </div>
+
+  <div class="line-items">
+    <div class="line">
+      <span class="line-label">Labor</span>
+      <span class="line-val" id="l-labor">—</span>
+    </div>
+    <div class="line">
+      <span class="line-label">Generation credits</span>
+      <span class="line-val" id="l-credits">—</span>
+    </div>
+    <div class="line">
+      <span class="line-label">Add-ons</span>
+      <span class="line-val" id="l-addons">—</span>
+    </div>
+    <div class="line">
+      <span class="line-label">Rush fee (25%)</span>
+      <span class="line-val" id="l-rush">—</span>
+    </div>
+  </div>
+
+  <div class="total-block">
+    <div class="total-label-group">
+      <span class="total-main-label">Total quote</span>
+      <span class="deposit-note" id="deposit-note"></span>
+    </div>
+    <span class="total-val" id="s-total">—</span>
+  </div>
+</div>
+
+<p class="rate-note">Redstone Laboratories LLC &nbsp;·&nbsp; Boston, MA &nbsp;·&nbsp; $135/hr</p>
+
+<div class="float-bar">
+  <div class="float-left">
+    <span class="float-label">Total quote</span>
+    <span class="float-deposit" id="f-deposit"></span>
+  </div>
+  <div class="float-right">
+    <span class="float-total" id="f-total">—</span>
+    <span class="float-hours" id="f-hours"></span>
+  </div>
+</div>
+
+<script>
+  const state = {
+    base: 'base',
+    length: '30',
+    revisions: '2',
+    rush: 'standard',
+    vo: false,
+    music: false,
+    export: false,
+    rights: false
+  };
+
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  function setChip(el, group, val) {
+    el.closest('.section').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    state[group] = val;
+    calc();
+  }
+
+  function toggleItem(key) {
+    state[key] = !state[key];
+    const sw = document.getElementById('sw-' + key);
+    sw.classList.toggle('on', state[key]);
+    calc();
+  }
+
+  function fmt(n) { return '$' + n.toLocaleString(); }
+
+  function calc() {
+    const RATE = 135;
+
+    const conceptHours = { base: 2, new: 5 };
+    const lengthHours = { '30': 3, '60': 5.5, '90': 8 };
+    const revHours = { '1': 1, '2': 2, '3': 3.5 };
+
+    const hours = conceptHours[state.base] + lengthHours[state.length] + revHours[state.revisions];
+    const labor = Math.round(hours * RATE);
+
+    const fal = parseInt(document.getElementById('fal-slider').value);
+    const el = parseInt(document.getElementById('el-slider').value);
+    const hardCosts = fal + el;
+
+    let addons = 0;
+    if (state.vo) addons += 150;
+    if (state.music) addons += 200;
+    if (state.export) addons += 100;
+    if (state.rights) addons += 300;
+
+    const subtotal = labor + hardCosts + addons;
+    const rushFee = state.rush === 'rush' ? Math.round(subtotal * 0.25) : 0;
+    const total = subtotal + rushFee;
+    const deposit = Math.round(total / 2);
+
+    document.getElementById('s-hours').textContent = hours + ' hrs';
+    document.getElementById('s-hard').textContent = fmt(hardCosts);
+    document.getElementById('l-labor').textContent = fmt(labor);
+    document.getElementById('l-credits').textContent = fmt(hardCosts);
+    document.getElementById('l-addons').textContent = addons > 0 ? fmt(addons) : '—';
+
+    const rushEl = document.getElementById('l-rush');
+    if (rushFee > 0) {
+      rushEl.textContent = '+' + fmt(rushFee);
+      rushEl.classList.remove('zero');
+    } else {
+      rushEl.textContent = '—';
+      rushEl.classList.add('zero');
+    }
+
+    document.getElementById('s-total').textContent = fmt(total);
+    document.getElementById('deposit-note').textContent = '50% deposit · ' + fmt(deposit) + ' upfront';
+    document.getElementById('f-total').textContent = fmt(total);
+    document.getElementById('f-deposit').textContent = '50% deposit · ' + fmt(deposit);
+    document.getElementById('f-hours').textContent = hours + ' hrs · $135/hr';
+  }
+
+  calc();
+</script>
+</body>
+</html>
